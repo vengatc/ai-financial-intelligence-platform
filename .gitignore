@@ -42,3 +42,4 @@ htmlcov/
 
 # Logs
 *.log
+data/raw/news/All_external.csv
