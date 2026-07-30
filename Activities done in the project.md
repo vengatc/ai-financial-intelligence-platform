@@ -25,6 +25,7 @@
 |----------|------------------------|----------------------|
 | Automated price data download | Built a command-line downloader (`scripts/download_stock_data.py`) that pulls historical OHLCV prices from Yahoo Finance via `yfinance`, with configurable years, tickers, and interval, and saves per-ticker CSVs. | Data Collection & Acquisition – programmatic sourcing of real-world data. |
 | Obtained news dataset | Loaded an existing financial news CSV dataset into the project (`data/raw/news/`). | Working with an external / unstructured-text dataset. |
+| Sentiment-date-aligned price download | Built a second downloader (`scripts/download_stock_by_sentiment_dates.py`) that reads each per-ticker sentiment CSV (`data/processed/sentiment_by_ticker/`), robustly parses the `Date` column (handling both `YYYY-MM-DD` and timezone-aware timestamps), derives each stock's actual news start/end dates, and downloads the matching OHLCV price window from Yahoo Finance so price and news coverage line up per ticker (e.g. NVDA 2011-03-03 → 2020-06-10). | Data Collection & Acquisition – aligning two data sources over a common time window to enable later feature fusion. |
 
 ### 2. Data Loading & Cleaning
 
@@ -54,6 +55,13 @@
 |----------|------------------------|----------------------|
 | FinBERT news sentiment scoring | Applied the pretrained finance-domain transformer `ProsusAI/finbert` (HuggingFace `transformers` `sentiment-analysis` pipeline) to each filtered news headline (`Article_title`), generating a sentiment label (positive / negative / neutral) and a confidence score. Ran the inference on **Google Colab GPU** because the local GPU was insufficient; handled missing titles and saved the enriched dataset to `data/processed/Filtered_external_sentiment.csv` (notebook `SentimentAnalysis.ipynb`). | Natural Language Processing / Deep Learning – transformer (BERT) text classification and pretrained-model inference (transfer learning). |
 
+### 5. Feature Engineering (Technical Indicators)
+
+| Activity | What Was Actually Done | MIT Learning Applied |
+|----------|------------------------|----------------------|
+| Computed technical indicators | Engineered per-ticker technical-analysis features from raw OHLCV data using pandas: SMA(10, 20), EMA(10, 20), RSI(14) (Wilder's smoothing), MACD(12, 26) with signal(9) and histogram, Daily Return (`pct_change`), and 20-day rolling Volatility plus its annualized form (notebook `03_feature_engineering.ipynb`). | Feature Engineering – deriving predictive technical features from time-series data. |
+| Verified no missing values & saved | Dropped indicator warm-up rows so the engineered feature columns contain no missing values, then saved per-ticker feature CSVs and a combined `features_all_tickers.csv` to `data/processed/`. | Data Quality Assessment; preparing a clean feature matrix for modeling. |
+
 ---
 
 ## MIT Curriculum Areas Demonstrated So Far
@@ -65,6 +73,7 @@
 | Descriptive Statistics & Probability | Summary stats, daily returns, annualized volatility |
 | Exploratory Data Analysis | Correlation matrix, performance comparison, news dataset profiling & filtering |
 | Natural Language Processing / Deep Learning | FinBERT (BERT transformer) sentiment classification of news headlines, run on Google Colab GPU |
+| Feature Engineering | Technical indicators (SMA, EMA, RSI, MACD, Daily Return, Volatility) computed per ticker in notebook 03 |
 
 ---
 
@@ -79,3 +88,5 @@
 ---
 
 *Maintenance note: Append a new row to the relevant table only after an activity is actually completed, and add the area to "Curriculum Areas Demonstrated" if newly covered. Do not list planned or not-yet-done work.*
+
+*Sync note: Whenever a new activity is completed and logged here, also strike through the matching item(s) in `todo/MIT_AI_ML_Capstone_Quest_Detailed.html` (add `class="task done"`, set the checkbox to `checked`, and change `☐` to `☑`) if a corresponding task exists there, so the HTML quest tracker stays in sync with this log.*
