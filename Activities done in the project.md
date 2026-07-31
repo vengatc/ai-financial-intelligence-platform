@@ -74,6 +74,17 @@
 | Scaled the merge across all 7 stocks | Generalized the merge into a reusable function and looped over all tickers, writing one `<TICKER>_training_dataset.csv` per stock plus a combined `all_training_dataset.csv`; tickers without a sentiment file (META, MSFT) were retained with zero-valued sentiment columns rather than dropped. | Reproducible data pipelines – parameterized, repeatable processing over multiple entities. |
 | Applied weighted decay to sentiment | Added a `SentimentEMA` feature to each `<TICKER>_training_dataset.csv` by taking an exponentially weighted moving average of the daily `AvgSentiment` (`ewm(span=5, adjust=False).mean()`), computed per ticker in chronological order so recent news is weighted more heavily and the decay never crosses stock boundaries; rebuilt `all_training_dataset.csv` to include the new column (notebook `O5_MergeData.ipynb`). | Feature Engineering – time-decay weighting to capture the fading influence of past sentiment. |
 
+### 7. Data Visualization (Price vs Sentiment)
+
+| Activity | What Was Actually Done | MIT Learning Applied |
+|----------|------------------------|----------------------|
+| Built a dedicated visualization notebook | Created `notebooks/06_Visualization.ipynb` that loads every `<TICKER>_training_dataset.csv` and explores the data both per ticker and combined. | Data Visualization – communicating patterns in a merged dataset. |
+| Plotted price vs sentiment per ticker | Produced a dual-axis chart for each stock: Close price on the left axis against the raw daily `AvgSentiment` and the weighted-decay `SentimentEMA` (span=5) on the right axis, with a zero reference line. | Time-series visualization; visual comparison of two differently-scaled series on shared dates. |
+| Combined cross-ticker views | Plotted all 7 tickers together as a normalized (rebased-to-100) price chart and as overlaid `SentimentEMA` curves for side-by-side comparison. | Comparative visualization / normalization for cross-entity comparison. |
+| Sentiment vs next-day direction | Grouped news days by the `TomorrowUp` label and compared the mean `SentimentEMA` for up vs down days in a bar chart, and wrote an Observations section summarizing the patterns. | EDA of the target relationship; drawing and documenting insights. |
+| Finding: sentiment has no standalone linear edge | Observed that the mean `SentimentEMA` on news days is essentially identical before up-days (≈0.0204) and down-days (≈0.0207) — a ≈0.0003 gap, i.e. no meaningful univariate signal for next-day direction on this short sample. Documented that this does **not** rule out sentiment being useful inside a multivariate/non-linear model (RF/XGBoost + SHAP), and noted confounds (zero-filled no-news days, small sample, possible lagged/non-linear effects). | Hypothesis testing / honest interpretation of EDA – distinguishing "no standalone linear signal" from "no value," motivating the modeling stage. |
+| Correlation heatmap of sentiment vs target | Built an annotated Pearson-correlation heatmap (matplotlib `imshow`, coolwarm, values labelled) over `AvgSentiment`, `SentimentEMA`, `AvgConfidence`, `HeadlineCount`, `Daily_Return`, and `TomorrowUp` on news days, plus a sorted printout of each feature's correlation with `TomorrowUp`. It visually confirms sentiment/EMA are near-zero correlated with next-day direction while `AvgSentiment` and `SentimentEMA` are strongly correlated with each other. | Correlation analysis / feature-vs-target relationship visualization. |
+
 ---
 
 ## MIT Curriculum Areas Demonstrated So Far
@@ -87,6 +98,7 @@
 | Natural Language Processing / Deep Learning | FinBERT (BERT transformer) sentiment classification of news headlines, run on Google Colab GPU |
 | Feature Engineering | Technical indicators (SMA, EMA, RSI, MACD, Daily Return, Volatility) computed per ticker in notebook 03 |
 | Data Fusion & Supervised-Problem Framing | Merging price features with daily sentiment on `Date`+`Stock_symbol`, reconciling datetime dtypes, and constructing the next-day `TomorrowUp` target per ticker in notebook `O5_MergeData` |
+| Data Visualization | Per-ticker price-vs-sentiment dual-axis charts, combined normalized-price and EMA-sentiment overlays, and a sentiment-vs-next-day-direction comparison in notebook `06_Visualization` |
 
 ---
 
