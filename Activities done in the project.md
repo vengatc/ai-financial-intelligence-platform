@@ -62,6 +62,18 @@
 | Computed technical indicators | Engineered per-ticker technical-analysis features from raw OHLCV data using pandas: SMA(10, 20), EMA(10, 20), RSI(14) (Wilder's smoothing), MACD(12, 26) with signal(9) and histogram, Daily Return (`pct_change`), and 20-day rolling Volatility plus its annualized form (notebook `03_feature_engineering.ipynb`). | Feature Engineering – deriving predictive technical features from time-series data. |
 | Verified no missing values & saved | Dropped indicator warm-up rows so the engineered feature columns contain no missing values, then saved per-ticker feature CSVs and a combined `features_all_tickers.csv` to `data/processed/`. | Data Quality Assessment; preparing a clean feature matrix for modeling. |
 
+### 6. Data Fusion & Target Creation (Price + Sentiment Merge)
+
+| Activity | What Was Actually Done | MIT Learning Applied |
+|----------|------------------------|----------------------|
+| Merged price features with daily sentiment | Joined each ticker's engineered technical-feature table (`<TICKER>_features.csv`) with its daily news-sentiment table (`data/processed/daily/<TICKER>_daily_sentiment.csv`) on `Date` + `Stock_symbol` using a left join to keep all trading days (notebook `O5_MergeData.ipynb`). | Data Fusion / Merging – combining two independent data sources on common keys. |
+| Reconciled mismatched date types | Fixed a merge failure caused by joining a timezone-naive `datetime64[us]` price date against a timezone-aware `datetime64[us, UTC]` sentiment date by normalizing both to timezone-naive, date-only values (`tz_localize(None)` + `normalize()`). | Data Wrangling – reconciling incompatible datetime dtypes across sources. |
+| Cleaned leftover index & intraday duplicates | Dropped a stray `Unnamed: 0` index column that had been written into a sentiment CSV, and collapsed multiple intraday sentiment rows for the same day into one record per (day, ticker) via `groupby` aggregation (mean sentiment/confidence, summed headline count). | Data Quality Assessment; data aggregation / de-duplication. |
+| Handled missing sentiment on trading days | Filled `HeadlineCount`, `AvgSentiment`, and `AvgConfidence` with 0 for trading days that had no news, so every trading day has a complete feature row. | Missing-value handling for downstream modeling. |
+| Created supervised target variable | Derived a next-day target by shifting `Close` to `Tomorrow_Close` and a binary `TomorrowUp` label (1 if next-day close is higher), computed **per ticker** (sorted by date) so the label never leaks across stock boundaries; dropped the final row that has no next-day value. | Supervised-learning problem framing – label construction and prevention of target leakage. |
+| Scaled the merge across all 7 stocks | Generalized the merge into a reusable function and looped over all tickers, writing one `<TICKER>_training_dataset.csv` per stock plus a combined `all_training_dataset.csv`; tickers without a sentiment file (META, MSFT) were retained with zero-valued sentiment columns rather than dropped. | Reproducible data pipelines – parameterized, repeatable processing over multiple entities. |
+| Applied weighted decay to sentiment | Added a `SentimentEMA` feature to each `<TICKER>_training_dataset.csv` by taking an exponentially weighted moving average of the daily `AvgSentiment` (`ewm(span=5, adjust=False).mean()`), computed per ticker in chronological order so recent news is weighted more heavily and the decay never crosses stock boundaries; rebuilt `all_training_dataset.csv` to include the new column (notebook `O5_MergeData.ipynb`). | Feature Engineering – time-decay weighting to capture the fading influence of past sentiment. |
+
 ---
 
 ## MIT Curriculum Areas Demonstrated So Far
@@ -74,6 +86,7 @@
 | Exploratory Data Analysis | Correlation matrix, performance comparison, news dataset profiling & filtering |
 | Natural Language Processing / Deep Learning | FinBERT (BERT transformer) sentiment classification of news headlines, run on Google Colab GPU |
 | Feature Engineering | Technical indicators (SMA, EMA, RSI, MACD, Daily Return, Volatility) computed per ticker in notebook 03 |
+| Data Fusion & Supervised-Problem Framing | Merging price features with daily sentiment on `Date`+`Stock_symbol`, reconciling datetime dtypes, and constructing the next-day `TomorrowUp` target per ticker in notebook `O5_MergeData` |
 
 ---
 
